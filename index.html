@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App Icons</title>
+<meta name="description" content="App icons hosted on GitHub Pages">
+<style>
+  :root {
+    --bg: #f6f6f4;
+    --surface: #ffffff;
+    --text: #1b1b1a;
+    --muted: #6b6b66;
+    --border: #e3e2de;
+    --accent: #2f6fed;
+    --accent-text: #ffffff;
+    --check-a: #e8e8e5;
+    --check-b: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121212;
+      --surface: #1c1c1c;
+      --text: #ededeb;
+      --muted: #9a9a95;
+      --border: #2d2d2c;
+      --accent: #6c9cff;
+      --accent-text: #0d0d0d;
+      --check-a: #2a2a2a;
+      --check-b: #1f1f1f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { margin: 0; font-size: 24px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 4px 0 20px; word-break: break-all; }
+  .sub code { color: var(--text); }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 20px; }
+  input[type="search"] {
+    flex: 1 1 220px; min-width: 0;
+    padding: 9px 12px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text); font: inherit;
+  }
+  input[type="search"]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button {
+    border: 0; background: var(--surface); color: var(--muted);
+    padding: 8px 12px; font: inherit; cursor: pointer;
+  }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+  .count { color: var(--muted); font-size: 14px; margin-left: auto; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .preview { height: 110px; display: grid; place-items: center; text-decoration: none; }
+  .preview img { max-width: 64px; max-height: 64px; }
+  body[data-bg="light"] .preview { background: #ffffff; }
+  body[data-bg="dark"] .preview { background: #1d1d1f; }
+  body[data-bg="grid"] .preview {
+    background: repeating-conic-gradient(var(--check-a) 0% 25%, var(--check-b) 0% 50%) 50% / 16px 16px;
+  }
+  .info { padding: 10px 12px 12px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+  .name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .meta { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .copy {
+    border: 0; border-radius: 7px; padding: 7px 10px;
+    background: var(--accent); color: var(--accent-text);
+    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .copy:hover { filter: brightness(1.08); }
+
+  .status {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; color: var(--muted);
+  }
+  .status strong { color: var(--text); display: block; margin-bottom: 4px; }
+  .status code { color: var(--text); }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+    background: var(--text); color: var(--bg);
+    padding: 9px 16px; border-radius: 999px; font-size: 14px;
+    opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body data-bg="grid">
+<div class="wrap">
+  <header>
+    <h1>App Icons</h1>
+    <p class="sub" id="sub">Loading…</p>
+  </header>
+
+  <div class="bar">
+    <input type="search" id="q" placeholder="Search icons" aria-label="Search icons">
+    <div class="seg" role="group" aria-label="Preview background">
+      <button type="button" data-bg="grid">Grid</button>
+      <button type="button" data-bg="light">Light</button>
+      <button type="button" data-bg="dark">Dark</button>
+    </div>
+    <span class="count" id="count"></span>
+  </div>
+
+  <main id="main"><div class="status">Loading icons…</div></main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  // ---------------------------------------------------------------
+  // Settings. On a normal github.io address you don't need to change
+  // anything. Fill in owner and repo only if you use a custom domain.
+  // ---------------------------------------------------------------
+  const CONFIG = {
+    folder: 'appicons', // the folder your icons live in
+    owner: '',          // your GitHub username (only needed for a custom domain)
+    repo: '',           // your repository name (only needed for a custom domain)
+    branch: ''          // leave blank to use the default branch
+  };
+
+  const IMG_EXT = /\.(svg|png|jpe?g|webp|gif|ico|avif|bmp)$/i;
+
+  // Works whether this page sits at the repo root or inside the icons folder.
+  const here = new URL('.', location.href);
+  const lastSeg = here.pathname.replace(/\/+$/, '').split('/').pop();
+  const siteBase = lastSeg === CONFIG.folder ? new URL('..', here) : here;
+
+  const $ = (id) => document.getElementById(id);
+  const encodePath = (p) => p.split('/').map(encodeURIComponent).join('/');
+  const iconUrl = (path) => new URL(encodePath(path), siteBase).href;
+  let ALL = [];
+
+  function detectRepo() {
+    if (CONFIG.owner && CONFIG.repo) return { owner: CONFIG.owner, repo: CONFIG.repo };
+    const m = location.hostname.match(/^([a-z0-9-]+)\.github\.io$/i);
+    if (!m) return null;
+    const owner = m[1];
+    const first = siteBase.pathname.split('/').filter(Boolean)[0];
+    return { owner, repo: first ? decodeURIComponent(first) : owner + '.github.io' };
+  }
+
+  async function listViaApi(owner, repo, path, depth) {
+    const ref = CONFIG.branch ? '?ref=' + encodeURIComponent(CONFIG.branch) : '';
+    const url = 'https://api.github.com/repos/' + encodeURIComponent(owner) + '/' +
+                encodeURIComponent(repo) + '/contents/' + encodePath(path) + ref;
+    const res = await fetch(url, { headers: { Accept: 'application/vnd.github+json' } });
+    if (!res.ok) {
+      const err = new Error('GitHub API error ' + res.status);
+      err.status = res.status;
+      throw err;
+    }
+    const items = await res.json();
+    if (!Array.isArray(items)) return [];
+    let out = [];
+    for (const it of items) {
+      if (it.type === 'file' && IMG_EXT.test(it.name)) {
+        out.push({ path: it.path, name: it.name, size: it.size });
+      } else if (it.type === 'dir' && depth < 3) {
+        out = out.concat(await listViaApi(owner, repo, it.path, depth + 1));
+      }
+    }
+    return out;
+  }
+
+  // Backup option: a list of file names in appicons/icons.json, e.g. ["home.svg", "logo.png"]
+  async function listViaManifest() {
+    const res = await fetch(new URL(CONFIG.folder + '/icons.json', siteBase), { cache: 'no-cache' });
+    if (!res.ok) throw new Error('No icons.json');
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : (data && data.icons) || [];
+    return list
+      .filter((n) => typeof n === 'string' && IMG_EXT.test(n))
+      .map((n) => {
+        const clean = n.replace(/^\/+/, '');
+        return { path: CONFIG.folder + '/' + clean, name: clean.split('/').pop(), size: null };
+      });
+  }
+
+  function formatSize(bytes) {
+    if (bytes == null) return '';
+    if (bytes < 1024) return bytes + ' B';
+    return (bytes / 1024).toFixed(bytes < 10240 ? 1 : 0) + ' KB';
+  }
+
+  function el(tag, attrs, text) {
+    const node = document.createElement(tag);
+    if (attrs) for (const k in attrs) node.setAttribute(k, attrs[k]);
+    if (text != null) node.textContent = text;
+    return node;
+  }
+
+  function showStatus(title, lines) {
+    const box = el('div', { class: 'status' });
+    box.appendChild(el('strong', null, title));
+    for (const line of lines) box.appendChild(el('div', null, line));
+    $('main').replaceChildren(box);
+    $('count').textContent = '';
+  }
+
+  function render() {
+    const q = $('q').value.trim().toLowerCase();
+    const list = q ? ALL.filter((i) => i.path.toLowerCase().includes(q)) : ALL;
+    $('count').textContent = list.length + (list.length === 1 ? ' icon' : ' icons');
+
+    if (!ALL.length) {
+      showStatus('No icons yet', [
+        'Upload images (SVG, PNG, WebP, ICO…) to the ' + CONFIG.folder + ' folder in your repo.',
+        'They will show up here a minute or two after GitHub Pages redeploys.'
+      ]);
+      return;
+    }
+    if (!list.length) {
+      showStatus('No matches', ['Nothing matches "' + q + '".']);
+      $('count').textContent = '0 icons';
+      return;
+    }
+
+    const grid = el('div', { class: 'grid' });
+    for (const icon of list) {
+      const url = iconUrl(icon.path);
+      const card = el('div', { class: 'card' });
+
+      const preview = el('a', { class: 'preview', href: url, target: '_blank', rel: 'noopener', title: 'Open ' + icon.name });
+      preview.appendChild(el('img', { src: url, alt: icon.name, loading: 'lazy' }));
+
+      const info = el('div', { class: 'info' });
+      info.appendChild(el('div', { class: 'name', title: icon.name }, icon.name));
+      const folder = icon.path.split('/').slice(1, -1).join('/');
+      const meta = [folder, formatSize(icon.size)].filter(Boolean).join(' · ');
+      if (meta) info.appendChild(el('div', { class: 'meta', title: meta }, meta));
+
+      const btn = el('button', { class: 'copy', type: 'button' }, 'Copy link');
+      btn.addEventListener('click', () => copy(url));
+      info.appendChild(btn);
+
+      card.append(preview, info);
+      grid.appendChild(card);
+    }
+    $('main').replaceChildren(grid);
+  }
+
+  async function copy(text) {
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      ok = true;
+    } catch (e) {
+      const ta = el('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+      ta.remove();
+    }
+    toast(ok ? 'Link copied' : 'Could not copy. Right-click the icon instead.');
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
+  }
+
+  function setBg(bg) {
+    document.body.dataset.bg = bg;
+    document.querySelectorAll('.seg button').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.dataset.bg === bg));
+    });
+    try { localStorage.setItem('appicons-bg', bg); } catch (e) {}
+  }
+
+  async function load() {
+    const sub = $('sub');
+    sub.textContent = 'Icon links look like ';
+    sub.appendChild(el('code', null, new URL(CONFIG.folder + '/your-icon.svg', siteBase).href));
+
+    const repo = detectRepo();
+    let icons = null;
+    let apiError = null;
+
+    if (repo) {
+      try { icons = await listViaApi(repo.owner, repo.repo, CONFIG.folder, 0); }
+      catch (e) { apiError = e; }
+    }
+    if (!icons) {
+      try { icons = await listViaManifest(); } catch (e) {}
+    }
+
+    if (!icons) {
+      if (!repo) {
+        showStatus("Couldn't find your repo", [
+          'This page could not work out your GitHub username and repo from the address.',
+          'Open index.html and fill in owner and repo at the top of the script.'
+        ]);
+      } else if (apiError && (apiError.status === 403 || apiError.status === 429)) {
+        showStatus('GitHub is busy', [
+          "GitHub limits how often this page can list files (about 60 times an hour per visitor).",
+          'Wait a bit and refresh. Your icon links still work in the meantime.'
+        ]);
+      } else {
+        showStatus('No ' + CONFIG.folder + ' folder found', [
+          'Create a folder called ' + CONFIG.folder + ' in ' + repo.owner + '/' + repo.repo + ' and upload your icons to it.',
+          'Your repo needs to be public for this page to list the icons.'
+        ]);
+      }
+      return;
+    }
+
+    ALL = icons.sort((a, b) => a.path.localeCompare(b.path));
+    render();
+  }
+
+  document.querySelectorAll('.seg button').forEach((b) => {
+    b.addEventListener('click', () => setBg(b.dataset.bg));
+  });
+  $('q').addEventListener('input', render);
+
+  let savedBg = 'grid';
+  try { savedBg = localStorage.getItem('appicons-bg') || 'grid'; } catch (e) {}
+  setBg(['grid', 'light', 'dark'].includes(savedBg) ? savedBg : 'grid');
+
+  load();
+</script>
+</body>
+</html>
